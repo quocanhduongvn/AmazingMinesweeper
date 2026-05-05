@@ -293,7 +293,7 @@ modeToggleBtn.addEventListener('click', () => {
 function updateHintUI() {
     hintModeBtn.innerText = isHintMode ? '💡 Đang gợi ý' : '💡 Gợi ý';
     hintModeBtn.classList.toggle('hint-active', isHintMode);
-    statusDiv.innerText = isHintMode ? 'Trạng thái: Chọn ô để xem giải thích' : 'Trạng thái: Đang chơi';
+    statusDiv.innerText = isHintMode ? 'Trạng thái: Chọn ô để AI phân tích' : 'Trạng thái: Đang chơi';
 }
 
 hintModeBtn.addEventListener('click', () => {
@@ -307,15 +307,60 @@ resetBtn.addEventListener('click', () => {
     updateStats(); saveGame(true);
 });
 
-// --- Hint Logic ---
+// --- Smart Hint Logic ---
 function explainHint(x, y) {
     let cell = getCell(x, y);
-    if (cell.state === 'hidden') {
-        alert("Ô này chưa mở. Hãy nhìn các con số xung quanh để đoán mìn!");
-    } else if (cell.state === 'revealed') {
+    
+    // If revealed, explain what the number means and its neighbors
+    if (cell.state === 'revealed') {
         let count = getMineCount(x, y);
-        if (count === 0) alert("Ô này không có mìn xung quanh.");
-        else alert(`Ô này có ${count} quả mìn trong 8 ô xung quanh nó.`);
+        let hidden = [], flagged = 0;
+        for(let dx=-1; dx<=1; dx++) {
+            for(let dy=-1; dy<=1; dy++) {
+                if(dx===0 && dy===0) continue;
+                let nc = getCell(x+dx, y+dy);
+                if (nc.state === 'hidden') hidden.push({x: x+dx, y: y+dy});
+                else if (nc.state === 'flagged') flagged++;
+            }
+        }
+        
+        if (count === flagged) alert(`Ô số ${count} này đã tìm đủ ${flagged} mìn xung quanh. Tất cả các ô trống còn lại quanh nó chắc chắn AN TOÀN!`);
+        else if (count === flagged + hidden.length) alert(`Ô số ${count} này còn thiếu ${count-flagged} mìn, và chỉ còn đúng ${hidden.length} ô trống. Vậy tất cả ô trống quanh nó đều là MÌN!`);
+        else alert(`Ô này báo có ${count} mìn. Hiện có ${flagged} cờ và ${hidden.length} ô chưa mở xung quanh. Hãy tìm thêm dữ liệu từ các ô khác.`);
+        return;
+    }
+
+    // If hidden, try to find a reason why it's safe or mine
+    if (cell.state === 'hidden' || cell.state === 'flagged') {
+        for(let dx=-1; dx<=1; dx++) {
+            for(let dy=-1; dy<=1; dy++) {
+                if(dx===0 && dy===0) continue;
+                let nx = x+dx, ny = y+dy;
+                let nc = getCell(nx, ny);
+                if (nc.state === 'revealed') {
+                    let nCount = getMineCount(nx, ny);
+                    let nHidden = [], nFlagged = 0;
+                    for(let ddx=-1; ddx<=1; ddx++) {
+                        for(let ddy=-1; ddy<=1; ddy++) {
+                            if(ddx===0 && ddy===0) continue;
+                            let nnc = getCell(nx+ddx, ny+ddy);
+                            if (nnc.state === 'hidden') nHidden.push({x: nx+ddx, y: ny+ddy});
+                            else if (nnc.state === 'flagged') nFlagged++;
+                        }
+                    }
+                    
+                    if (nCount === nFlagged) {
+                        alert(`Dựa vào ô số ${nCount} tại (${nx}, ${ny}), ô này chắc chắn AN TOÀN vì ô đó đã đủ số mìn rồi!`);
+                        return;
+                    }
+                    if (nCount === nFlagged + nHidden.length) {
+                        alert(`Dựa vào ô số ${nCount} tại (${nx}, ${ny}), ô này chắc chắn là MÌN vì đó là vị trí duy nhất còn lại!`);
+                        return;
+                    }
+                }
+            }
+        }
+        alert("Chưa đủ dữ liệu logic để kết luận về ô này. Hãy mở các ô khác xung quanh trước!");
     }
 }
 
