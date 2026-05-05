@@ -235,17 +235,22 @@ const colors = ['', '#64B5F6', '#81C784', '#E57373', '#BA68C8', '#FFB74D', '#4DD
 
 function drawCell(x, y, screenX, screenY, size) {
     let cell = getCell(x, y);
-    const padding = 1;
-    const drawSize = size - padding;
-    const r = 2;
+    const padding = 2; // Increased padding for clearer separation
+    const drawSize = size - padding * 2;
+    const r = 3; // Slightly more rounded for modern look
 
     if (cell.state === 'hidden') {
-        ctx.fillStyle = '#1a1a1a';
-        ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
-        ctx.strokeStyle = '#222'; ctx.lineWidth = 1; ctx.stroke();
+        // Darker grey for hidden
+        ctx.fillStyle = '#1e1e1e';
+        ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
+        // Thin border to make it pop
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.stroke();
     } else if (cell.state === 'revealed') {
+        // Lighter grey for revealed
         ctx.fillStyle = '#2c2c2c';
-        ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
+        // Inner border
+        ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 1; ctx.stroke();
         let count = getMineCount(x, y);
         if (count > 0) {
             ctx.fillStyle = colors[count] || '#fff';
@@ -254,16 +259,16 @@ function drawCell(x, y, screenX, screenY, size) {
             ctx.fillText(count, screenX + size/2, screenY + size/2 + 1);
         }
     } else if (cell.state === 'flagged') {
-        ctx.fillStyle = '#1a1a1a';
-        ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
+        ctx.fillStyle = '#1e1e1e';
+        ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
         const cx = screenX + size/2, cy = screenY + size/2;
         ctx.fillStyle = '#D32F2F';
-        ctx.beginPath(); ctx.moveTo(cx - size*0.1, cy + size*0.3); ctx.lineTo(cx - size*0.1, cy - size*0.3); ctx.lineTo(cx + size*0.3, cy - size*0.05); ctx.lineTo(cx - size*0.1, cy + size*0.2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cx - size*0.1, cy + size*0.25); ctx.lineTo(cx - size*0.1, cy - size*0.3); ctx.lineTo(cx + size*0.3, cy - size*0.05); ctx.lineTo(cx - size*0.1, cy + size*0.2); ctx.fill();
         ctx.strokeStyle = '#D32F2F'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(cx-size*0.1, cy+size*0.35); ctx.lineTo(cx-size*0.1, cy-size*0.35); ctx.stroke();
     } else if (cell.state === 'exploded') {
         ctx.fillStyle = '#f44336';
-        ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
         ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX+size/2, screenY+size/2, size*.2, 0, Math.PI*2); ctx.fill();
     }
 }
