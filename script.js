@@ -262,14 +262,52 @@ function drawCell(x, y, screenX, screenY, size) {
         ctx.fillStyle = '#1e1e1e';
         ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
         const cx = screenX + size/2, cy = screenY + size/2;
-        ctx.fillStyle = '#D32F2F';
-        ctx.beginPath(); ctx.moveTo(cx - size*0.1, cy + size*0.25); ctx.lineTo(cx - size*0.1, cy - size*0.3); ctx.lineTo(cx + size*0.3, cy - size*0.05); ctx.lineTo(cx - size*0.1, cy + size*0.2); ctx.fill();
-        ctx.strokeStyle = '#D32F2F'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(cx-size*0.1, cy+size*0.35); ctx.lineTo(cx-size*0.1, cy-size*0.35); ctx.stroke();
+        
+        // Dynamic Flag
+        ctx.shadowBlur = 5; ctx.shadowColor = 'rgba(211, 47, 47, 0.5)';
+        ctx.fillStyle = '#FF5252'; // Vibrant red
+        ctx.beginPath();
+        ctx.moveTo(cx - size*0.12, cy + size*0.3);
+        ctx.lineTo(cx - size*0.12, cy - size*0.35); // Taller pole
+        ctx.quadraticCurveTo(cx + size*0.1, cy - size*0.45, cx + size*0.35, cy - size*0.2); // Waving top
+        ctx.lineTo(cx + size*0.35, cy + size*0.05);
+        ctx.quadraticCurveTo(cx + size*0.1, cy - size*0.15, cx - size*0.12, cy + size*0.1); // Waving bottom
+        ctx.fill();
+        
+        // Pole with gradient
+        ctx.strokeStyle = '#D32F2F'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(cx-size*0.12, cy+size*0.35); ctx.lineTo(cx-size*0.12, cy-size*0.35); ctx.stroke();
+        ctx.shadowBlur = 0;
+        
     } else if (cell.state === 'exploded') {
-        ctx.fillStyle = '#f44336';
+        ctx.fillStyle = '#222';
         ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX+size/2, screenY+size/2, size*.2, 0, Math.PI*2); ctx.fill();
+        const cx = screenX + size/2, cy = screenY + size/2;
+        
+        // Detailed Bomb
+        ctx.shadowBlur = 15; ctx.shadowColor = '#f44336';
+        
+        // Body
+        let bombGrad = ctx.createRadialGradient(cx-size*0.1, cy-size*0.1, 2, cx, cy, size*0.3);
+        bombGrad.addColorStop(0, '#555');
+        bombGrad.addColorStop(1, '#000');
+        ctx.fillStyle = bombGrad;
+        ctx.beginPath(); ctx.arc(cx, cy, size*0.28, 0, Math.PI*2); ctx.fill();
+        
+        // Spikes (Modern/Neon)
+        ctx.strokeStyle = '#f44336'; ctx.lineWidth = 2;
+        for(let i=0; i<8; i++) {
+            let ang = i * Math.PI/4;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(ang)*size*0.2, cy + Math.sin(ang)*size*0.2);
+            ctx.lineTo(cx + Math.cos(ang)*size*0.4, cy + Math.sin(ang)*size*0.4);
+            ctx.stroke();
+        }
+        
+        // Fuse spark
+        ctx.fillStyle = '#FFEB3B';
+        ctx.beginPath(); ctx.arc(cx+size*0.15, cy-size*0.15, 2, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
     }
 }
 
