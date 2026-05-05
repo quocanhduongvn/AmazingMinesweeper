@@ -268,15 +268,20 @@ function drawCell(x, y, screenX, screenY, size) {
         ctx.fillStyle = '#444';
         ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, innerSize, innerSize, r); ctx.fill();
         
-        // Flag icon (Modern)
-        ctx.shadowBlur = 10; ctx.shadowColor = '#F44336';
-        ctx.fillStyle = '#F44336';
+        // Modern Warning Triangle
+        ctx.shadowBlur = 10; ctx.shadowColor = '#FF9800';
+        ctx.fillStyle = '#FF9800';
         ctx.beginPath();
-        ctx.moveTo(screenX + size * 0.35, screenY + size * 0.75);
-        ctx.lineTo(screenX + size * 0.35, screenY + size * 0.25);
-        ctx.lineTo(screenX + size * 0.75, screenY + size * 0.45);
-        ctx.lineTo(screenX + size * 0.35, screenY + size * 0.55);
+        ctx.moveTo(screenX + size/2, screenY + size * 0.25);
+        ctx.lineTo(screenX + size * 0.2, screenY + size * 0.75);
+        ctx.lineTo(screenX + size * 0.8, screenY + size * 0.75);
+        ctx.closePath();
         ctx.fill();
+        
+        ctx.fillStyle = '#000';
+        ctx.font = `bold ${size * 0.3}px Inter`;
+        ctx.textAlign = 'center';
+        ctx.fillText('!', screenX + size/2, screenY + size * 0.68);
         ctx.shadowBlur = 0;
     } else if (cell.state === 'exploded') {
         ctx.fillStyle = '#F44336';
@@ -332,7 +337,7 @@ function draw() {
 menuToggleBtn.addEventListener('click', () => uiContainer.classList.toggle('hidden'));
 modeToggleBtn.addEventListener('click', () => {
     currentMode = currentMode === 'dig' ? 'flag' : 'dig';
-    modeToggleBtn.innerText = currentMode === 'dig' ? 'Chế độ: ⛏️ Mở ô' : 'Chế độ: 🚩 Cắm cờ';
+    modeToggleBtn.innerText = currentMode === 'dig' ? 'Chế độ: ⛏️ Mở ô' : 'Chế độ: ⚠️ Đánh dấu';
     modeToggleBtn.classList.toggle('flag-mode', currentMode === 'flag');
 });
 
