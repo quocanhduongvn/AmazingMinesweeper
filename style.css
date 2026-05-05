@@ -122,6 +122,7 @@ button:active {
 canvas {
     display: block;
     cursor: crosshair;
+    touch-action: none;
 }
 
 /* Modal Styles */

@@ -656,13 +656,24 @@ resetBtn.addEventListener('click', () => {
 });
 
 // Start game
+console.log("Game initializing...");
 resizeCanvas();
+
 if (!loadGame()) {
+    console.log("No save found, starting new game.");
     camera.x = canvas.width / 2;
     camera.y = canvas.height / 2;
-    reveal(0, 0); // Start the game by revealing origin
+    camera.zoom = 40;
+    reveal(0, 0); 
     updateStats();
 } else {
+    console.log("Save loaded. Camera:", camera);
+    // Extra safety: if camera is suspiciously far or small, reset it
+    if (Math.abs(camera.x) > 100000 || Math.abs(camera.y) > 100000 || camera.zoom < 5) {
+        camera.x = canvas.width / 2;
+        camera.y = canvas.height / 2;
+        camera.zoom = 40;
+    }
     draw();
 }
 
@@ -955,15 +966,6 @@ if (window.innerWidth <= 600) {
     uiContainer.classList.add('hidden');
 }
 
-// --- Menu Toggle Logic ---
-const menuToggleBtn = document.getElementById('menuToggleBtn');
-const uiContainer = document.getElementById('ui');
-
-// Auto-hide menu on very small screens initially
-if (window.innerWidth <= 600) {
-    uiContainer.classList.add('hidden');
-}
-
 menuToggleBtn.addEventListener('click', () => {
     uiContainer.classList.toggle('hidden');
 });
@@ -1017,7 +1019,6 @@ function cancelLongPress() {
 let lastPinchDist = 0;
 
 canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
     if (e.touches.length === 1) {
         cancelLongPress();
         isDragging = true;
@@ -1038,7 +1039,6 @@ canvas.addEventListener('touchstart', (e) => {
 }, { passive: false });
 
 canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
     if (e.touches.length === 1) {
         let dist = Math.hypot(e.touches[0].clientX - touchStartPos.x, e.touches[0].clientY - touchStartPos.y);
         if (dist > 25) { // Increased tolerance for mobile fingers
@@ -1084,7 +1084,6 @@ canvas.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 canvas.addEventListener('touchend', (e) => {
-    // e.preventDefault(); // Removed to avoid potential blocking of UI or other interactions
     cancelLongPress();
     if (e.touches.length < 2) lastPinchDist = 0;
 
