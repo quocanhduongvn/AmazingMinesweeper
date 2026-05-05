@@ -541,6 +541,13 @@ function drawCell(x, y, screenX, screenY, size) {
 }
 
 function draw() {
+    if (!canvas.width || !canvas.height) return;
+    
+    // Sanity check for camera to prevent black screen (NaN or Infinity issues)
+    if (isNaN(camera.x) || isNaN(camera.y) || isNaN(camera.zoom) || camera.zoom <= 0) {
+        camera = { x: canvas.width / 2, y: canvas.height / 2, zoom: 40 };
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     let startX = Math.floor((-camera.x) / camera.zoom);
@@ -1077,7 +1084,7 @@ canvas.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 canvas.addEventListener('touchend', (e) => {
-    e.preventDefault();
+    // e.preventDefault(); // Removed to avoid potential blocking of UI or other interactions
     cancelLongPress();
     if (e.touches.length < 2) lastPinchDist = 0;
 
