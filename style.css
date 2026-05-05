@@ -50,14 +50,15 @@ body {
 }
 
 .panel {
-    background: rgba(30, 30, 30, 0.7);
-    backdrop-filter: blur(10px);
+    background: rgba(18, 18, 18, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
     pointer-events: auto;
-    max-width: 350px;
+    max-width: 380px;
 }
 
 h1 {
