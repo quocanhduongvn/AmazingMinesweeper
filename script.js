@@ -3,17 +3,24 @@ const ctx = canvas.getContext('2d');
 const hintModeBtn = document.getElementById('hintModeBtn');
 const resetBtn = document.getElementById('resetBtn');
 const statusDiv = document.getElementById('status');
+const menuToggleBtn = document.getElementById('menuToggleBtn');
+const uiContainer = document.getElementById('ui');
 
 let isHintMode = false;
-
-let camera = { x: 0, y: 0, zoom: 40 }; // zoom is tile size
+let camera = { x: 0, y: 0, zoom: 40 }; 
 let isDragging = false;
 let dragStart = { x: 0, y: 0 };
 let cameraStart = { x: 0, y: 0 };
-
 let cells = new Map(); 
 let seed = Math.random();
 let autoSolveInterval = null;
+
+let longPressTimeout = null;
+let longPressFired = false;
+let touchStartPos = { x: 0, y: 0 };
+let longPressProgress = 0;
+let longPressInterval = null;
+let lastPinchDist = 0;
 
 const MINE_PROBABILITY = 0.20;
 const SAFE_RADIUS = 2; // Radius around 0,0 that is guaranteed safe
@@ -957,25 +964,19 @@ runManualSolveBtn.addEventListener('click', () => {
     }
 });
 
-// --- Menu Toggle Logic ---
-const menuToggleBtn = document.getElementById('menuToggleBtn');
-const uiContainer = document.getElementById('ui');
-
-// Auto-hide menu on very small screens initially
-if (window.innerWidth <= 600) {
-    uiContainer.classList.add('hidden');
-}
-
-menuToggleBtn.addEventListener('click', () => {
+menuToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     uiContainer.classList.toggle('hidden');
 });
 
+// Hide menu if clicking outside on mobile
+canvas.addEventListener('touchstart', () => {
+    if (window.innerWidth <= 600 && !uiContainer.classList.contains('hidden')) {
+        uiContainer.classList.add('hidden');
+    }
+});
+
 // --- Mobile Touch Support ---
-let longPressTimeout = null;
-let longPressFired = false;
-let touchStartPos = { x: 0, y: 0 };
-let longPressProgress = 0;
-let longPressInterval = null;
 
 function startLongPressTimer(x, y) {
     longPressProgress = 0;
@@ -1019,6 +1020,7 @@ function cancelLongPress() {
 let lastPinchDist = 0;
 
 canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); 
     if (e.touches.length === 1) {
         cancelLongPress();
         isDragging = true;
@@ -1039,10 +1041,11 @@ canvas.addEventListener('touchstart', (e) => {
 }, { passive: false });
 
 canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
     if (e.touches.length === 1) {
         let dist = Math.hypot(e.touches[0].clientX - touchStartPos.x, e.touches[0].clientY - touchStartPos.y);
-        if (dist > 25) { // Increased tolerance for mobile fingers
-            cancelLongPress(); // User moved, cancel long press
+        if (dist > 25) { 
+            cancelLongPress(); 
         }
     }
 
