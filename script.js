@@ -25,8 +25,10 @@ let seed = Math.random();
 let touchStartPos = { x: 0, y: 0 };
 let lastPinchDist = 0;
 
-const MINE_PROBABILITY = 0.20;
+let MINE_PROBABILITY = 0.20;
 const SAFE_RADIUS = 2;
+
+const difficultySelect = document.getElementById('difficultySelect');
 
 // --- DPI Support ---
 function setupCanvas() {
@@ -75,6 +77,7 @@ function saveGame(instant = false) {
         let state = {
             seed: seed,
             camera: camera,
+            difficulty: MINE_PROBABILITY,
             cells: Array.from(cells.entries())
         };
         localStorage.setItem('infiniteMinesweeper', JSON.stringify(state));
@@ -90,6 +93,8 @@ function loadGame() {
             let state = JSON.parse(saved);
             seed = state.seed;
             camera = state.camera || { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 45 };
+            MINE_PROBABILITY = state.difficulty || 0.20;
+            difficultySelect.value = MINE_PROBABILITY.toString();
             cells = new Map(state.cells);
             updateStats();
             return true;
@@ -348,6 +353,7 @@ hintModeBtn.addEventListener('click', () => {
 });
 
 resetBtn.addEventListener('click', () => {
+    MINE_PROBABILITY = parseFloat(difficultySelect.value);
     cells.clear(); seed = Math.random(); camera = { x: canvas.width / (2 * (window.devicePixelRatio||1)), y: canvas.height / (2 * (window.devicePixelRatio||1)), zoom: 45 };
     for(let i=0; i<5; i++) reveal(Math.floor(Math.random()*5)-2, Math.floor(Math.random()*5)-2);
     updateStats(); saveGame(true);

@@ -19,6 +19,14 @@
             <h1>Infinite Minesweeper</h1>
             <p>Kéo để di chuyển, cuộn/zoom 2 ngón để thu phóng.</p>
             <div class="controls">
+                <div style="margin-bottom: 10px;">
+                    <label for="difficultySelect" style="font-size: 13px; color: #aaa;">Mật độ mìn:</label>
+                    <select id="difficultySelect" style="width: 100%; background: #2a2a2a; color: white; border: 1px solid #444; padding: 8px; border-radius: 6px; margin-top: 5px;">
+                        <option value="0.12">Dễ (12%)</option>
+                        <option value="0.20" selected>Trung bình (20%)</option>
+                        <option value="0.30">Khó (30%)</option>
+                    </select>
+                </div>
                 <button id="manualSolveBtn" style="background:#9C27B0; border-color:#7B1FA2;">Giải đố nhập tay (8x8)</button>
                 <button id="resetBtn">Chơi lại</button>
             </div>
