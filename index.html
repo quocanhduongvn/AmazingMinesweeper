@@ -31,9 +31,9 @@
                     <label for="difficultySelect" style="font-size: 13px; color: #aaa;">Mật độ mìn:</label>
                     <select id="difficultySelect" style="width: 100%; background: #2a2a2a; color: white; border: 1px solid #444; padding: 8px; border-radius: 6px; margin-top: 5px;">
                         <option value="0.12">Dễ (12%)</option>
-                        <option value="0.20" selected>Trung bình (20%)</option>
+                        <option value="0.20">Trung bình (20%)</option>
                         <option value="0.30">Khó (30%)</option>
-                        <option value="0.40">Rất dày (40%)</option>
+                        <option value="0.40" selected>Rất dày (40%)</option>
                     </select>
                 </div>
                 <button id="manualSolveBtn" style="background:#9C27B0; border-color:#7B1FA2;">Giải đố nhập tay (8x8)</button>
@@ -41,6 +41,7 @@
             </div>
             <div id="status">Trạng thái: Đang chơi</div>
             <div id="stats" style="margin-top: 10px; font-size: 0.9em; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; line-height: 1.5;">
+                <div style="color: #FFD700; font-weight: bold; margin-bottom: 5px;">🏆 Khu vực 8x8 đã phá: <span id="framesVal">0</span></div>
                 Điểm hiện tại: <span id="scoreVal" style="color: #4CAF50; font-weight: bold; font-size: 1.1em;">0</span> | Kỷ lục: <span id="highScoreVal" style="color: #FFC107; font-weight: bold; font-size: 1.1em;">0</span><br>
                 Ô đã mở: <span id="revealedVal">0</span><br>
                 Cờ cắm đúng mìn: <span id="flagsVal" style="color: #2196F3;">0</span><br>
