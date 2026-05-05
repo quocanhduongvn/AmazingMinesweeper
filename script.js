@@ -123,7 +123,7 @@ function loadGame() {
             MINE_PROBABILITY = state.difficulty || 0.40;
             BOARD_SIZE = state.boardSize || 0;
             clearedFrames = new Set(state.clearedFrames || []);
-            if (difficultySelect) difficultySelect.value = MINE_PROBABILITY.toString();
+            if (difficultySelect) difficultySelect.value = MINE_PROBABILITY.toFixed(2);
             if (sizeSelect) sizeSelect.value = BOARD_SIZE.toString();
             cells = new Map(state.cells);
             updateStats();
