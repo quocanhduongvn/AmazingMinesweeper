@@ -13,6 +13,8 @@ const statusDiv = document.getElementById('status');
 const menuToggleBtn = document.getElementById('menuToggleBtn');
 const uiContainer = document.getElementById('ui');
 const modeToggleBtn = document.getElementById('modeToggleBtn');
+const difficultySelect = document.getElementById('difficultySelect');
+const sizeSelect = document.getElementById('sizeSelect');
 
 let isHintMode = false;
 let currentMode = 'dig'; // 'dig' or 'flag'
@@ -26,15 +28,13 @@ let touchStartPos = { x: 0, y: 0 };
 let lastPinchDist = 0;
 
 let MINE_PROBABILITY = 0.20;
+let BOARD_SIZE = 0; // 0 = Infinite, >0 = NxN
 const SAFE_RADIUS = 2;
-
-const difficultySelect = document.getElementById('difficultySelect');
 
 // --- DPI Support ---
 function setupCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = window.innerWidth, h = window.innerHeight;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     canvas.style.width = w + 'px';
@@ -57,17 +57,27 @@ function hash(x, y) {
 }
 
 function isMine(x, y) {
+    // Bounds check for fixed size
+    if (BOARD_SIZE > 0) {
+        if (x < 0 || y < 0 || x >= BOARD_SIZE || y >= BOARD_SIZE) return false;
+    }
     if (Math.abs(x) <= SAFE_RADIUS && Math.abs(y) <= SAFE_RADIUS) return false;
     return hash(x, y) < MINE_PROBABILITY;
 }
 
 function getCell(x, y) {
+    if (BOARD_SIZE > 0) {
+        if (x < 0 || y < 0 || x >= BOARD_SIZE || y >= BOARD_SIZE) return { state: 'void' };
+    }
     let key = `${x},${y}`;
     if (cells.has(key)) return cells.get(key);
     return { state: 'hidden' };
 }
 
 function setCell(x, y, state) {
+    if (BOARD_SIZE > 0) {
+        if (x < 0 || y < 0 || x >= BOARD_SIZE || y >= BOARD_SIZE) return;
+    }
     let key = `${x},${y}`;
     cells.set(key, { state: state });
 }
@@ -78,6 +88,7 @@ function saveGame(instant = false) {
             seed: seed,
             camera: camera,
             difficulty: MINE_PROBABILITY,
+            boardSize: BOARD_SIZE,
             cells: Array.from(cells.entries())
         };
         localStorage.setItem('infiniteMinesweeper', JSON.stringify(state));
@@ -94,7 +105,9 @@ function loadGame() {
             seed = state.seed;
             camera = state.camera || { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 45 };
             MINE_PROBABILITY = state.difficulty || 0.20;
-            difficultySelect.value = MINE_PROBABILITY.toString();
+            BOARD_SIZE = state.boardSize || 0;
+            if (difficultySelect) difficultySelect.value = MINE_PROBABILITY.toString();
+            if (sizeSelect) sizeSelect.value = BOARD_SIZE.toString();
             cells = new Map(state.cells);
             updateStats();
             return true;
@@ -174,6 +187,9 @@ function reveal(startX, startY) {
             for(let dx=-1; dx<=1; dx++) {
                 for(let dy=-1; dy<=1; dy++) {
                     let nx = x+dx, ny = y+dy;
+                    if (BOARD_SIZE > 0) {
+                        if (nx < 0 || ny < 0 || nx >= BOARD_SIZE || ny >= BOARD_SIZE) continue;
+                    }
                     if (!visited.has(`${nx},${ny}`)) {
                         visited.add(`${nx},${ny}`);
                         queue.push({x: nx, y: ny});
@@ -240,21 +256,19 @@ const colors = ['', '#64B5F6', '#81C784', '#E57373', '#BA68C8', '#FFB74D', '#4DD
 
 function drawCell(x, y, screenX, screenY, size) {
     let cell = getCell(x, y);
-    const padding = 2; // Increased padding for clearer separation
+    if (cell.state === 'void') return; // Don't draw out of bounds
+
+    const padding = 2;
     const drawSize = size - padding * 2;
-    const r = 3; // Slightly more rounded for modern look
+    const r = 3;
 
     if (cell.state === 'hidden') {
-        // Darker grey for hidden
         ctx.fillStyle = '#1e1e1e';
         ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
-        // Thin border to make it pop
         ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.stroke();
     } else if (cell.state === 'revealed') {
-        // Lighter grey for revealed
         ctx.fillStyle = '#2c2c2c';
         ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
-        // Inner border
         ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 1; ctx.stroke();
         let count = getMineCount(x, y);
         if (count > 0) {
@@ -267,51 +281,32 @@ function drawCell(x, y, screenX, screenY, size) {
         ctx.fillStyle = '#1e1e1e';
         ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
         const cx = screenX + size/2, cy = screenY + size/2;
-        
-        // Dynamic Flag
         ctx.shadowBlur = 5; ctx.shadowColor = 'rgba(211, 47, 47, 0.5)';
-        ctx.fillStyle = '#FF5252'; // Vibrant red
+        ctx.fillStyle = '#FF5252';
         ctx.beginPath();
-        ctx.moveTo(cx - size*0.12, cy + size*0.3);
-        ctx.lineTo(cx - size*0.12, cy - size*0.35); // Taller pole
-        ctx.quadraticCurveTo(cx + size*0.1, cy - size*0.45, cx + size*0.35, cy - size*0.2); // Waving top
+        ctx.moveTo(cx - size*0.12, cy + size*0.3); ctx.lineTo(cx - size*0.12, cy - size*0.35);
+        ctx.quadraticCurveTo(cx + size*0.1, cy - size*0.45, cx + size*0.35, cy - size*0.2);
         ctx.lineTo(cx + size*0.35, cy + size*0.05);
-        ctx.quadraticCurveTo(cx + size*0.1, cy - size*0.15, cx - size*0.12, cy + size*0.1); // Waving bottom
+        ctx.quadraticCurveTo(cx + size*0.1, cy - size*0.15, cx - size*0.12, cy + size*0.1);
         ctx.fill();
-        
-        // Pole with gradient
         ctx.strokeStyle = '#D32F2F'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(cx-size*0.12, cy+size*0.35); ctx.lineTo(cx-size*0.12, cy-size*0.35); ctx.stroke();
         ctx.shadowBlur = 0;
-        
     } else if (cell.state === 'exploded') {
         ctx.fillStyle = '#222';
         ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, drawSize, drawSize, r); ctx.fill();
         const cx = screenX + size/2, cy = screenY + size/2;
-        
-        // Detailed Bomb
         ctx.shadowBlur = 15; ctx.shadowColor = '#f44336';
-        
-        // Body
         let bombGrad = ctx.createRadialGradient(cx-size*0.1, cy-size*0.1, 2, cx, cy, size*0.3);
-        bombGrad.addColorStop(0, '#555');
-        bombGrad.addColorStop(1, '#000');
-        ctx.fillStyle = bombGrad;
-        ctx.beginPath(); ctx.arc(cx, cy, size*0.28, 0, Math.PI*2); ctx.fill();
-        
-        // Spikes (Modern/Neon)
+        bombGrad.addColorStop(0, '#555'); bombGrad.addColorStop(1, '#000');
+        ctx.fillStyle = bombGrad; ctx.beginPath(); ctx.arc(cx, cy, size*0.28, 0, Math.PI*2); ctx.fill();
         ctx.strokeStyle = '#f44336'; ctx.lineWidth = 2;
         for(let i=0; i<8; i++) {
             let ang = i * Math.PI/4;
-            ctx.beginPath();
-            ctx.moveTo(cx + Math.cos(ang)*size*0.2, cy + Math.sin(ang)*size*0.2);
-            ctx.lineTo(cx + Math.cos(ang)*size*0.4, cy + Math.sin(ang)*size*0.4);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx + Math.cos(ang)*size*0.2, cy + Math.sin(ang)*size*0.2);
+            ctx.lineTo(cx + Math.cos(ang)*size*0.4, cy + Math.sin(ang)*size*0.4); ctx.stroke();
         }
-        
-        // Fuse spark
-        ctx.fillStyle = '#FFEB3B';
-        ctx.beginPath(); ctx.arc(cx+size*0.15, cy-size*0.15, 2, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#FFEB3B'; ctx.beginPath(); ctx.arc(cx+size*0.15, cy-size*0.15, 2, 0, Math.PI*2); ctx.fill();
         ctx.shadowBlur = 0;
     }
 }
@@ -324,8 +319,20 @@ function draw() {
         camera = { x: w / 2, y: h / 2, zoom: 45 };
     }
     ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, w, h);
+    
     let startX = Math.floor((-camera.x) / camera.zoom), endX = Math.ceil((w - camera.x) / camera.zoom);
     let startY = Math.floor((-camera.y) / camera.zoom), endY = Math.ceil((h - camera.y) / camera.zoom);
+    
+    // Clamp drawing area for fixed size
+    if (BOARD_SIZE > 0) {
+        startX = Math.max(0, startX); endX = Math.min(BOARD_SIZE - 1, endX);
+        startY = Math.max(0, startY); endY = Math.min(BOARD_SIZE - 1, endY);
+        
+        // Draw board boundary
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 2;
+        ctx.strokeRect(camera.x, camera.y, BOARD_SIZE * camera.zoom, BOARD_SIZE * camera.zoom);
+    }
+    
     for (let x = startX; x <= endX; x++) {
         for (let y = startY; y <= endY; y++) {
             drawCell(x, y, Math.floor(camera.x + x * camera.zoom), Math.floor(camera.y + y * camera.zoom), Math.ceil(camera.zoom));
@@ -354,16 +361,23 @@ hintModeBtn.addEventListener('click', () => {
 
 resetBtn.addEventListener('click', () => {
     MINE_PROBABILITY = parseFloat(difficultySelect.value);
-    cells.clear(); seed = Math.random(); camera = { x: canvas.width / (2 * (window.devicePixelRatio||1)), y: canvas.height / (2 * (window.devicePixelRatio||1)), zoom: 45 };
-    for(let i=0; i<5; i++) reveal(Math.floor(Math.random()*5)-2, Math.floor(Math.random()*5)-2);
+    BOARD_SIZE = parseInt(sizeSelect.value);
+    cells.clear(); seed = Math.random(); 
+    
+    if (BOARD_SIZE > 0) camera = { x: (canvas.width/dpr - BOARD_SIZE*45)/2, y: (canvas.height/dpr - BOARD_SIZE*45)/2, zoom: 45 };
+    else camera = { x: canvas.width / (2 * (window.devicePixelRatio||1)), y: canvas.height / (2 * (window.devicePixelRatio||1)), zoom: 45 };
+    
+    let startX = BOARD_SIZE > 0 ? Math.floor(BOARD_SIZE/2) : 0;
+    let startY = BOARD_SIZE > 0 ? Math.floor(BOARD_SIZE/2) : 0;
+    
+    for(let i=0; i<5; i++) reveal(startX + Math.floor(Math.random()*5)-2, startY + Math.floor(Math.random()*5)-2);
     updateStats(); saveGame(true);
 });
 
 // --- Smart Hint Logic ---
 function explainHint(x, y) {
     let cell = getCell(x, y);
-    
-    // If revealed, explain what the number means and its neighbors
+    if (cell.state === 'void') return;
     if (cell.state === 'revealed') {
         let count = getMineCount(x, y);
         let hidden = [], flagged = 0;
@@ -375,14 +389,11 @@ function explainHint(x, y) {
                 else if (nc.state === 'flagged') flagged++;
             }
         }
-        
-        if (count === flagged) alert(`Ô số ${count} này đã tìm đủ ${flagged} mìn xung quanh. Tất cả các ô trống còn lại quanh nó chắc chắn AN TOÀN!`);
-        else if (count === flagged + hidden.length) alert(`Ô số ${count} này còn thiếu ${count-flagged} mìn, và chỉ còn đúng ${hidden.length} ô trống. Vậy tất cả ô trống quanh nó đều là MÌN!`);
-        else alert(`Ô này báo có ${count} mìn. Hiện có ${flagged} cờ và ${hidden.length} ô chưa mở xung quanh. Hãy tìm thêm dữ liệu từ các ô khác.`);
+        if (count === flagged) alert(`Ô số ${count} đã đủ mìn. Ô trống còn lại an toàn!`);
+        else if (count === flagged + hidden.length) alert(`Ô số ${count} thiếu ${count-flagged} mìn, chỉ còn ${hidden.length} ô. Tất cả là mìn!`);
+        else alert(`Ô số ${count}: Hiện có ${flagged} cờ và ${hidden.length} ô chưa mở.`);
         return;
     }
-
-    // If hidden, try to find a reason why it's safe or mine
     if (cell.state === 'hidden' || cell.state === 'flagged') {
         for(let dx=-1; dx<=1; dx++) {
             for(let dy=-1; dy<=1; dy++) {
@@ -390,8 +401,7 @@ function explainHint(x, y) {
                 let nx = x+dx, ny = y+dy;
                 let nc = getCell(nx, ny);
                 if (nc.state === 'revealed') {
-                    let nCount = getMineCount(nx, ny);
-                    let nHidden = [], nFlagged = 0;
+                    let nCount = getMineCount(nx, ny), nHidden = [], nFlagged = 0;
                     for(let ddx=-1; ddx<=1; ddx++) {
                         for(let ddy=-1; ddy<=1; ddy++) {
                             if(ddx===0 && ddy===0) continue;
@@ -400,19 +410,12 @@ function explainHint(x, y) {
                             else if (nnc.state === 'flagged') nFlagged++;
                         }
                     }
-                    
-                    if (nCount === nFlagged) {
-                        alert(`Dựa vào ô số ${nCount} tại (${nx}, ${ny}), ô này chắc chắn AN TOÀN vì ô đó đã đủ số mìn rồi!`);
-                        return;
-                    }
-                    if (nCount === nFlagged + nHidden.length) {
-                        alert(`Dựa vào ô số ${nCount} tại (${nx}, ${ny}), ô này chắc chắn là MÌN vì đó là vị trí duy nhất còn lại!`);
-                        return;
-                    }
+                    if (nCount === nFlagged) { alert(`Dựa vào ô số ${nCount}, ô này AN TOÀN!`); return; }
+                    if (nCount === nFlagged + nHidden.length) { alert(`Dựa vào ô số ${nCount}, ô này là MÌN!`); return; }
                 }
             }
         }
-        alert("Chưa đủ dữ liệu logic để kết luận về ô này. Hãy mở các ô khác xung quanh trước!");
+        alert("Chưa đủ dữ liệu logic.");
     }
 }
 
@@ -471,7 +474,10 @@ canvas.addEventListener('touchend', (e) => {
     lastPinchDist = 0;
 });
 
-// Start
+const dpr = window.devicePixelRatio || 1;
 setupCanvas();
-if (!loadGame()) { camera = { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 45 }; for(let i=0; i<5; i++) reveal(Math.floor(Math.random()*5)-2, Math.floor(Math.random()*5)-2); updateStats(); }
+if (!loadGame()) { 
+    camera = { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 45 }; 
+    for(let i=0; i<5; i++) reveal(Math.floor(Math.random()*5)-2, Math.floor(Math.random()*5)-2); updateStats(); 
+}
 else draw();

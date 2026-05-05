@@ -20,11 +20,20 @@
             <p>Kéo để di chuyển, cuộn/zoom 2 ngón để thu phóng.</p>
             <div class="controls">
                 <div style="margin-bottom: 10px;">
+                    <label for="sizeSelect" style="font-size: 13px; color: #aaa;">Kích thước bản đồ:</label>
+                    <select id="sizeSelect" style="width: 100%; background: #2a2a2a; color: white; border: 1px solid #444; padding: 8px; border-radius: 6px; margin-top: 5px;">
+                        <option value="30">30 x 30</option>
+                        <option value="60">60 x 60</option>
+                        <option value="0" selected>Vô hạn (Infinite)</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 10px;">
                     <label for="difficultySelect" style="font-size: 13px; color: #aaa;">Mật độ mìn:</label>
                     <select id="difficultySelect" style="width: 100%; background: #2a2a2a; color: white; border: 1px solid #444; padding: 8px; border-radius: 6px; margin-top: 5px;">
                         <option value="0.12">Dễ (12%)</option>
                         <option value="0.20" selected>Trung bình (20%)</option>
                         <option value="0.30">Khó (30%)</option>
+                        <option value="0.40">Rất dày (40%)</option>
                     </select>
                 </div>
                 <button id="manualSolveBtn" style="background:#9C27B0; border-color:#7B1FA2;">Giải đố nhập tay (8x8)</button>
