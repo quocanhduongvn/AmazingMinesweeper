@@ -10,16 +10,17 @@
 </head>
 <body>
     <button id="menuToggleBtn">☰ Menu</button>
-    <button id="modeToggleBtn" class="mode-btn">Chế độ: ⛏️ Mở ô</button>
+    <div class="bottom-controls">
+        <button id="modeToggleBtn" class="floating-btn mode-btn">⛏️ Mở ô</button>
+        <button id="hintModeBtn" class="floating-btn hint-btn">💡 Gợi ý</button>
+    </div>
     <div id="ui">
         <div class="panel" id="mainPanel">
             <h1>Infinite Minesweeper</h1>
             <p>Kéo để di chuyển, cuộn/zoom 2 ngón để thu phóng.</p>
             <div class="controls">
-                <button id="hintModeBtn" style="background:#FF9800; border-color:#F57C00;">Bật Gợi Ý: Tắt</button>
                 <button id="manualSolveBtn" style="background:#9C27B0; border-color:#7B1FA2;">Giải đố nhập tay (8x8)</button>
                 <button id="resetBtn">Chơi lại</button>
-                <button id="hardResetBtn" style="background:#f44336; border-color:#d32f2f; margin-top: 10px;">Xóa hết & Khôi phục</button>
             </div>
             <div id="status">Trạng thái: Đang chơi</div>
             <div id="stats" style="margin-top: 10px; font-size: 0.9em; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; line-height: 1.5;">

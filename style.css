@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #121212;
+    background-color: #0a0a0a;
     color: #ffffff;
     overflow: hidden;
     user-select: none;
@@ -16,21 +16,18 @@ body {
     position: absolute;
     top: 20px;
     right: 20px;
-    z-index: 20;
-    background: #1a4b8c;
+    z-index: 100;
+    background: rgba(30, 30, 30, 0.8);
     color: white;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 10px 15px;
-    border-radius: 6px;
+    border-radius: 12px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
+    backdrop-filter: blur(10px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     transition: all 0.2s ease;
-}
-
-#menuToggleBtn:hover {
-    background: #205ab0;
 }
 
 #ui {
@@ -62,18 +59,20 @@ body {
 }
 
 h1 {
-    font-size: 24px;
-    margin-bottom: 8px;
-    background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%);
+    font-size: 28px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+    font-family: 'Orbitron', sans-serif;
 }
 
 p {
-    font-size: 13px;
-    color: #aaaaaa;
-    margin-bottom: 16px;
-    line-height: 1.4;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 20px;
+    line-height: 1.5;
 }
 
 .controls {
@@ -98,210 +97,75 @@ button {
 button:hover {
     background: #3a3a3a;
     border-color: #666;
-    transform: translateY(-1px);
-}
-
-button:active {
-    transform: translateY(1px);
-}
-
-#solveAllBtn {
-    background: #1a4b8c;
-    border-color: #2a6bcc;
-}
-
-#solveAllBtn:hover {
-    background: #205ab0;
 }
 
 #status {
     font-size: 14px;
     font-weight: bold;
     color: #4CAF50;
+    margin-bottom: 10px;
 }
 
 canvas {
     display: block;
-    cursor: crosshair;
     touch-action: none;
+    background-color: #0a0a0a;
 }
 
-/* Modal Styles */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.8);
+.bottom-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.floating-btn {
+    pointer-events: auto;
+    height: 65px;
+    border-radius: 32px;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.6);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 100;
-}
-
-.modal-content {
-    background: #1e1e1e;
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 24px;
-    width: 450px;
-    max-width: 95vw;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.modal-content h2 {
-    font-size: 20px;
-    color: #fff;
-    margin-bottom: 0;
+    flex: 1;
+    border: none;
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+    transition: transform 0.1s active;
 }
 
 .mode-btn {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
-    background: rgba(30, 30, 30, 0.8);
-    color: #fff;
-    border: 2px solid #00C9FF;
-    padding: 12px 24px;
-    border-radius: 30px;
-    font-size: 16px;
-    font-weight: bold;
-    box-shadow: 0 4px 15px rgba(0, 201, 255, 0.3);
-    backdrop-filter: blur(10px);
+    background: linear-gradient(135deg, #1a4b8c 0%, #00C9FF 100%);
+    border: 1px solid rgba(255,255,255,0.2);
 }
 
-.mode-btn.flag-mode {
-    border-color: #F44336;
-    box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+.hint-btn {
+    background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+    border: 1px solid rgba(255,255,255,0.2);
 }
 
-.manual-grid {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
-    background: #444;
-    padding: 4px;
-    border-radius: 4px;
+.hint-active {
+    background: #4CAF50 !important;
+    box-shadow: 0 0 15px #4CAF50;
 }
 
-.manual-grid input {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    text-align: center;
-    font-size: 16px;
-    font-weight: bold;
-    background: #2a2a2a;
-    color: #fff;
-    border: 1px solid #555;
-    outline: none;
-    transition: background 0.2s;
-}
-
-.manual-grid input:focus {
-    background: #3a3a3a;
-    border-color: #00C9FF;
-}
-
-.manual-grid input.safe {
-    background: rgba(76, 175, 80, 0.3);
-    border-color: #4CAF50;
-}
-
-.manual-grid input.mine {
-    background: rgba(244, 67, 54, 0.3);
-    border-color: #F44336;
-    color: #F44336;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.modal-actions button {
-    flex: 1;
-}
-
-/* Mobile Optimization */
 @media (max-width: 600px) {
     #ui {
         top: 10px;
         left: 10px;
         right: 10px;
     }
-
     .panel {
         max-width: none;
-        width: 100%;
-        padding: 12px;
-        background: rgba(18, 18, 18, 0.9); /* More opaque for readability */
+        padding: 15px;
     }
-
-    h1 {
-        font-size: 18px;
-        margin-bottom: 6px;
-    }
-
-    p {
-        display: none; /* Hide tutorial text on mobile to save space */
-    }
-
-    .controls {
-        display: grid;
-        grid-template-columns: 1fr 1fr; /* Two columns for buttons */
-        gap: 8px;
-    }
-
-    button {
-        padding: 14px 10px;
-        font-size: 14px;
-        border-radius: 8px;
-    }
-
-    #hardResetBtn {
-        grid-column: span 2;
-        margin-top: 5px;
-        padding: 10px;
-    }
-
-    #menuToggleBtn {
-        top: auto;
-        bottom: 20px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 24px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-    }
-
-    .mode-btn {
-        bottom: 20px;
-        left: 20px;
-        transform: none;
-        width: auto;
-        min-width: 140px;
-        height: 60px;
-        border-radius: 30px;
-        font-size: 16px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-    }
-
-    #stats {
-        margin-top: 8px;
-        padding: 6px;
-        font-size: 11px;
-    }
+    p { display: none; }
+    h1 { font-size: 20px; }
 }

@@ -28,10 +28,9 @@ let lastPinchDist = 0;
 const MINE_PROBABILITY = 0.20;
 const SAFE_RADIUS = 2;
 
-// --- DPI Support & Resizing ---
+// --- DPI Support ---
 function setupCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    // Round to avoid subpixel distortion
     canvas.width = Math.floor(window.innerWidth * dpr);
     canvas.height = Math.floor(window.innerHeight * dpr);
     canvas.style.width = window.innerWidth + 'px';
@@ -207,8 +206,10 @@ canvas.addEventListener('mouseup', (e) => {
         let rect = canvas.getBoundingClientRect();
         let gridX = Math.floor((e.clientX - rect.left - camera.x) / camera.zoom);
         let gridY = Math.floor((e.clientY - rect.top - camera.y) / camera.zoom);
-        if (e.button === 0) reveal(gridX, gridY);
-        else if (e.button === 2) toggleFlag(gridX, gridY);
+        if (e.button === 0) {
+            if (isHintMode) { explainHint(gridX, gridY); isHintMode = false; updateHintUI(); }
+            else reveal(gridX, gridY);
+        } else if (e.button === 2) toggleFlag(gridX, gridY);
     }
     saveGame();
 });
@@ -227,31 +228,24 @@ canvas.addEventListener('wheel', (e) => {
 });
 
 // --- Rendering ---
-// Colors from image: Numbers are white/light grey
 const colors = ['', '#64B5F6', '#81C784', '#E57373', '#BA68C8', '#FFB74D', '#4DD0E1', '#FFF', '#FFF'];
 
 function drawCell(x, y, screenX, screenY, size) {
     let cell = getCell(x, y);
     const padding = 1;
     const drawSize = size - padding;
-    const r = 2; // Subtle rounding as in image
+    const r = 2;
 
     if (cell.state === 'hidden') {
-        // Darker grey for hidden
         ctx.fillStyle = '#1a1a1a';
         ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
-        // Thin border
         ctx.strokeStyle = '#222'; ctx.lineWidth = 1; ctx.stroke();
-        
     } else if (cell.state === 'revealed') {
-        // Lighter grey for revealed
         ctx.fillStyle = '#2c2c2c';
         ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
-        
         let count = getMineCount(x, y);
         if (count > 0) {
             ctx.fillStyle = colors[count] || '#fff';
-            // Blocky font from image
             ctx.font = `700 ${size * 0.6}px 'Orbitron', sans-serif`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(count, screenX + size/2, screenY + size/2 + 1);
@@ -259,23 +253,11 @@ function drawCell(x, y, screenX, screenY, size) {
     } else if (cell.state === 'flagged') {
         ctx.fillStyle = '#1a1a1a';
         ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
-        
-        // Red flag on pole as in image
-        const cx = screenX + size/2;
-        const cy = screenY + size/2;
-        
-        ctx.fillStyle = '#D32F2F'; // Dark red
-        ctx.beginPath();
-        ctx.moveTo(cx - size*0.1, cy + size*0.3); // Pole bottom
-        ctx.lineTo(cx - size*0.1, cy - size*0.3); // Pole top
-        ctx.lineTo(cx + size*0.3, cy - size*0.05); // Flag tip
-        ctx.lineTo(cx - size*0.1, cy + size*0.2); // Flag bottom back to pole
-        ctx.fill();
-        
-        // Pole line
+        const cx = screenX + size/2, cy = screenY + size/2;
+        ctx.fillStyle = '#D32F2F';
+        ctx.beginPath(); ctx.moveTo(cx - size*0.1, cy + size*0.3); ctx.lineTo(cx - size*0.1, cy - size*0.3); ctx.lineTo(cx + size*0.3, cy - size*0.05); ctx.lineTo(cx - size*0.1, cy + size*0.2); ctx.fill();
         ctx.strokeStyle = '#D32F2F'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(cx-size*0.1, cy+size*0.35); ctx.lineTo(cx-size*0.1, cy-size*0.35); ctx.stroke();
-        
     } else if (cell.state === 'exploded') {
         ctx.fillStyle = '#f44336';
         ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
@@ -286,20 +268,13 @@ function drawCell(x, y, screenX, screenY, size) {
 function draw() {
     if (!canvas.width || !canvas.height) return;
     const dpr = window.devicePixelRatio || 1;
-    const w = canvas.width / dpr;
-    const h = canvas.height / dpr;
-
+    const w = canvas.width / dpr, h = canvas.height / dpr;
     if (isNaN(camera.x) || isNaN(camera.y) || isNaN(camera.zoom) || camera.zoom <= 0) {
         camera = { x: w / 2, y: h / 2, zoom: 45 };
     }
-    
-    // Pitch black background as in image
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, w, h);
-    
+    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, w, h);
     let startX = Math.floor((-camera.x) / camera.zoom), endX = Math.ceil((w - camera.x) / camera.zoom);
     let startY = Math.floor((-camera.y) / camera.zoom), endY = Math.ceil((h - camera.y) / camera.zoom);
-    
     for (let x = startX; x <= endX; x++) {
         for (let y = startY; y <= endY; y++) {
             drawCell(x, y, Math.floor(camera.x + x * camera.zoom), Math.floor(camera.y + y * camera.zoom), Math.ceil(camera.zoom));
@@ -315,15 +290,34 @@ modeToggleBtn.addEventListener('click', () => {
     modeToggleBtn.classList.toggle('flag-mode', currentMode === 'flag');
 });
 
+function updateHintUI() {
+    hintModeBtn.innerText = isHintMode ? '💡 Đang gợi ý' : '💡 Gợi ý';
+    hintModeBtn.classList.toggle('hint-active', isHintMode);
+    statusDiv.innerText = isHintMode ? 'Trạng thái: Chọn ô để xem giải thích' : 'Trạng thái: Đang chơi';
+}
+
+hintModeBtn.addEventListener('click', () => {
+    isHintMode = !isHintMode;
+    updateHintUI();
+});
+
 resetBtn.addEventListener('click', () => {
     cells.clear(); seed = Math.random(); camera = { x: canvas.width / (2 * (window.devicePixelRatio||1)), y: canvas.height / (2 * (window.devicePixelRatio||1)), zoom: 45 };
     for(let i=0; i<5; i++) reveal(Math.floor(Math.random()*5)-2, Math.floor(Math.random()*5)-2);
     updateStats(); saveGame(true);
 });
 
-document.getElementById('hardResetBtn').addEventListener('click', () => {
-    if (confirm("Xóa toàn bộ dữ liệu?")) { localStorage.clear(); location.reload(); }
-});
+// --- Hint Logic ---
+function explainHint(x, y) {
+    let cell = getCell(x, y);
+    if (cell.state === 'hidden') {
+        alert("Ô này chưa mở. Hãy nhìn các con số xung quanh để đoán mìn!");
+    } else if (cell.state === 'revealed') {
+        let count = getMineCount(x, y);
+        if (count === 0) alert("Ô này không có mìn xung quanh.");
+        else alert(`Ô này có ${count} quả mìn trong 8 ô xung quanh nó.`);
+    }
+}
 
 // --- Touch ---
 canvas.addEventListener('touchstart', (e) => {
@@ -371,7 +365,8 @@ canvas.addEventListener('touchend', (e) => {
                 let rect = canvas.getBoundingClientRect();
                 let gridX = Math.floor((e.changedTouches[0].clientX - rect.left - camera.x) / camera.zoom);
                 let gridY = Math.floor((e.changedTouches[0].clientY - rect.top - camera.y) / camera.zoom);
-                if (currentMode === 'flag') toggleFlag(gridX, gridY);
+                if (isHintMode) { explainHint(gridX, gridY); isHintMode = false; updateHintUI(); }
+                else if (currentMode === 'flag') toggleFlag(gridX, gridY);
                 else reveal(gridX, gridY);
             }
         }
