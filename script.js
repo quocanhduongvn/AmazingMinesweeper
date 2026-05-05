@@ -1011,6 +1011,8 @@ function cancelLongPress() {
     draw();
 }
 
+let lastPinchDist = 0;
+
 canvas.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
         isDragging = true;
@@ -1020,6 +1022,13 @@ canvas.addEventListener('touchstart', (e) => {
         
         longPressFired = false;
         startLongPressTimer(e.touches[0].clientX, e.touches[0].clientY);
+    } else if (e.touches.length === 2) {
+        cancelLongPress();
+        isDragging = false;
+        lastPinchDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
     }
 });
 
@@ -1031,6 +1040,36 @@ canvas.addEventListener('touchmove', (e) => {
         }
     }
 
+    if (e.touches.length === 2) {
+        let currentDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        
+        if (lastPinchDist > 0) {
+            let centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            let centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            
+            let zoomDelta = currentDist / lastPinchDist;
+            
+            let rect = canvas.getBoundingClientRect();
+            let mouseX = centerX - rect.left;
+            let mouseY = centerY - rect.top;
+            
+            let gridX = (mouseX - camera.x) / camera.zoom;
+            let gridY = (mouseY - camera.y) / camera.zoom;
+            
+            camera.zoom *= zoomDelta;
+            camera.zoom = Math.max(15, Math.min(camera.zoom, 100));
+            
+            camera.x = mouseX - gridX * camera.zoom;
+            camera.y = mouseY - gridY * camera.zoom;
+            
+            draw();
+        }
+        lastPinchDist = currentDist;
+    }
+
     if (isDragging && e.touches.length === 1 && !longPressFired) {
         camera.x = cameraStart.x + (e.touches[0].clientX - dragStart.x);
         camera.y = cameraStart.y + (e.touches[0].clientY - dragStart.y);
@@ -1040,6 +1079,7 @@ canvas.addEventListener('touchmove', (e) => {
 
 canvas.addEventListener('touchend', (e) => {
     cancelLongPress();
+    if (e.touches.length < 2) lastPinchDist = 0;
 
     if (isDragging) {
         isDragging = false;
