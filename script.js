@@ -1,5 +1,12 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+// --- Debugging ---
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    alert("Script Error: " + msg + "\nLine: " + lineNo);
+    return false;
+};
+
 const hintModeBtn = document.getElementById('hintModeBtn');
 const resetBtn = document.getElementById('resetBtn');
 const statusDiv = document.getElementById('status');
@@ -662,6 +669,14 @@ resetBtn.addEventListener('click', () => {
     saveGame(true);
 });
 
+const hardResetBtn = document.getElementById('hardResetBtn');
+hardResetBtn.addEventListener('click', () => {
+    if (confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu và bắt đầu lại từ đầu không?")) {
+        localStorage.clear();
+        location.reload();
+    }
+});
+
 // Start game
 console.log("Game initializing...");
 resizeCanvas();
@@ -1060,7 +1075,10 @@ canvas.addEventListener('touchmove', (e) => {
             let centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
             
             let zoomDelta = currentDist / lastPinchDist;
-            
+            // Sanity check for zoomDelta to prevent corruption
+            if (zoomDelta > 1.5) zoomDelta = 1.5;
+            if (zoomDelta < 0.5) zoomDelta = 0.5;
+
             let rect = canvas.getBoundingClientRect();
             let mouseX = centerX - rect.left;
             let mouseY = centerY - rect.top;
