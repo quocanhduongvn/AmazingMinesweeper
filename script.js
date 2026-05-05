@@ -433,8 +433,6 @@ canvas.addEventListener('mouseup', (e) => {
                 hintModeBtn.style.borderColor = '#F57C00';
                 statusDiv.innerText = 'Trạng thái: Đang chơi';
                 statusDiv.style.color = '#4CAF50';
-            } else if (currentMode === 'flag') {
-                toggleFlag(gridX, gridY);
             } else {
                 reveal(gridX, gridY);
             }
@@ -587,6 +585,25 @@ function draw() {
     ctx.moveTo(0, canvas.height/2);
     ctx.lineTo(canvas.width, canvas.height/2);
     ctx.stroke();
+
+    // Draw Long-Press Progress Indicator (Mobile Optimization)
+    if (longPressProgress > 0 && longPressProgress < 1) {
+        let rect = canvas.getBoundingClientRect();
+        let x = touchStartPos.x - rect.left;
+        let y = touchStartPos.y - rect.top;
+        
+        ctx.beginPath();
+        ctx.arc(x, y, 25, 0, Math.PI * 2 * longPressProgress);
+        ctx.strokeStyle = '#00C9FF';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        
+        // Inner pulse
+        ctx.beginPath();
+        ctx.arc(x, y, 15 * longPressProgress, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 201, 255, 0.3)';
+        ctx.fill();
+    }
 }
 
 // --- Init & UI Hooks ---
@@ -935,26 +952,64 @@ menuToggleBtn.addEventListener('click', () => {
     uiContainer.classList.toggle('hidden');
 });
 
-// --- Mobile Mode Toggle ---
-const modeToggleBtn = document.getElementById('modeToggleBtn');
-let currentMode = 'dig'; // 'dig' or 'flag'
+// --- Menu Toggle Logic ---
+const menuToggleBtn = document.getElementById('menuToggleBtn');
+const uiContainer = document.getElementById('ui');
 
-modeToggleBtn.addEventListener('click', () => {
-    if (currentMode === 'dig') {
-        currentMode = 'flag';
-        modeToggleBtn.innerText = 'Chế độ: 🚩 Cắm cờ';
-        modeToggleBtn.classList.add('flag-mode');
-    } else {
-        currentMode = 'dig';
-        modeToggleBtn.innerText = 'Chế độ: ⛏️ Mở ô';
-        modeToggleBtn.classList.remove('flag-mode');
-    }
+// Auto-hide menu on very small screens initially
+if (window.innerWidth <= 600) {
+    uiContainer.classList.add('hidden');
+}
+
+menuToggleBtn.addEventListener('click', () => {
+    uiContainer.classList.toggle('hidden');
 });
 
 // --- Mobile Touch Support ---
 let longPressTimeout = null;
 let longPressFired = false;
 let touchStartPos = { x: 0, y: 0 };
+let longPressProgress = 0;
+let longPressInterval = null;
+
+function startLongPressTimer(x, y) {
+    longPressProgress = 0;
+    const duration = 300; // 300ms is snappier
+    const interval = 20;
+    
+    longPressInterval = setInterval(() => {
+        longPressProgress += interval / duration;
+        if (longPressProgress >= 1) {
+            longPressProgress = 1;
+            clearInterval(longPressInterval);
+        }
+        draw();
+    }, interval);
+    
+    longPressTimeout = setTimeout(() => {
+        longPressFired = true;
+        clearInterval(longPressInterval);
+        longPressProgress = 0;
+        
+        let rect = canvas.getBoundingClientRect();
+        let mouseX = x - rect.left;
+        let mouseY = y - rect.top;
+        
+        let gridX = Math.floor((mouseX - camera.x) / camera.zoom);
+        let gridY = Math.floor((mouseY - camera.y) / camera.zoom);
+        
+        toggleFlag(gridX, gridY);
+        if (navigator.vibrate) navigator.vibrate(50);
+        draw();
+    }, duration);
+}
+
+function cancelLongPress() {
+    clearTimeout(longPressTimeout);
+    clearInterval(longPressInterval);
+    longPressProgress = 0;
+    draw();
+}
 
 canvas.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
@@ -964,21 +1019,7 @@ canvas.addEventListener('touchstart', (e) => {
         cameraStart = { x: camera.x, y: camera.y };
         
         longPressFired = false;
-        longPressTimeout = setTimeout(() => {
-            longPressFired = true;
-            // Trigger flag
-            let rect = canvas.getBoundingClientRect();
-            let mouseX = touchStartPos.x - rect.left;
-            let mouseY = touchStartPos.y - rect.top;
-            
-            let gridX = Math.floor((mouseX - camera.x) / camera.zoom);
-            let gridY = Math.floor((mouseY - camera.y) / camera.zoom);
-            
-            toggleFlag(gridX, gridY);
-            
-            // Haptic feedback
-            if (navigator.vibrate) navigator.vibrate(50);
-        }, 400); // 400ms long press
+        startLongPressTimer(e.touches[0].clientX, e.touches[0].clientY);
     }
 });
 
@@ -986,7 +1027,7 @@ canvas.addEventListener('touchmove', (e) => {
     if (e.touches.length === 1) {
         let dist = Math.hypot(e.touches[0].clientX - touchStartPos.x, e.touches[0].clientY - touchStartPos.y);
         if (dist > 10) {
-            clearTimeout(longPressTimeout); // User moved, cancel long press
+            cancelLongPress(); // User moved, cancel long press
         }
     }
 
@@ -998,7 +1039,7 @@ canvas.addEventListener('touchmove', (e) => {
 });
 
 canvas.addEventListener('touchend', (e) => {
-    clearTimeout(longPressTimeout);
+    cancelLongPress();
 
     if (isDragging) {
         isDragging = false;
@@ -1023,8 +1064,6 @@ canvas.addEventListener('touchend', (e) => {
                     hintModeBtn.style.borderColor = '#F57C00';
                     statusDiv.innerText = 'Trạng thái: Đang chơi';
                     statusDiv.style.color = '#4CAF50';
-                } else if (currentMode === 'flag') {
-                    toggleFlag(gridX, gridY);
                 } else {
                     reveal(gridX, gridY);
                 }
