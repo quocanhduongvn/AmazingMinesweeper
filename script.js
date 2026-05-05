@@ -948,10 +948,6 @@ if (window.innerWidth <= 600) {
     uiContainer.classList.add('hidden');
 }
 
-menuToggleBtn.addEventListener('click', () => {
-    uiContainer.classList.toggle('hidden');
-});
-
 // --- Menu Toggle Logic ---
 const menuToggleBtn = document.getElementById('menuToggleBtn');
 const uiContainer = document.getElementById('ui');
@@ -1014,7 +1010,9 @@ function cancelLongPress() {
 let lastPinchDist = 0;
 
 canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
     if (e.touches.length === 1) {
+        cancelLongPress();
         isDragging = true;
         dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -1030,12 +1028,13 @@ canvas.addEventListener('touchstart', (e) => {
             e.touches[0].clientY - e.touches[1].clientY
         );
     }
-});
+}, { passive: false });
 
 canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
     if (e.touches.length === 1) {
         let dist = Math.hypot(e.touches[0].clientX - touchStartPos.x, e.touches[0].clientY - touchStartPos.y);
-        if (dist > 10) {
+        if (dist > 25) { // Increased tolerance for mobile fingers
             cancelLongPress(); // User moved, cancel long press
         }
     }
@@ -1075,9 +1074,10 @@ canvas.addEventListener('touchmove', (e) => {
         camera.y = cameraStart.y + (e.touches[0].clientY - dragStart.y);
         draw();
     }
-});
+}, { passive: false });
 
 canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
     cancelLongPress();
     if (e.touches.length < 2) lastPinchDist = 0;
 
