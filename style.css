@@ -241,35 +241,67 @@ canvas {
     .panel {
         max-width: none;
         width: 100%;
-        padding: 15px;
+        padding: 12px;
+        background: rgba(18, 18, 18, 0.9); /* More opaque for readability */
     }
 
     h1 {
-        font-size: 20px;
+        font-size: 18px;
+        margin-bottom: 6px;
+    }
+
+    p {
+        display: none; /* Hide tutorial text on mobile to save space */
+    }
+
+    .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Two columns for buttons */
+        gap: 8px;
     }
 
     button {
-        padding: 12px 16px;
-        font-size: 15px;
+        padding: 14px 10px;
+        font-size: 14px;
+        border-radius: 8px;
+    }
+
+    #hardResetBtn {
+        grid-column: span 2;
+        margin-top: 5px;
+        padding: 10px;
     }
 
     #menuToggleBtn {
-        top: 10px;
-        right: 10px;
-        padding: 12px 18px;
-        font-size: 18px;
+        top: auto;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    }
+
+    .mode-btn {
+        bottom: 20px;
+        left: 20px;
+        transform: none;
+        width: auto;
+        min-width: 140px;
+        height: 60px;
+        border-radius: 30px;
+        font-size: 16px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
     }
 
     #stats {
-        padding: 8px;
-        font-size: 0.85em;
-    }
-
-    .modal-content {
-        padding: 15px;
-    }
-
-    .manual-grid input {
-        font-size: 14px;
+        margin-top: 8px;
+        padding: 6px;
+        font-size: 11px;
     }
 }
