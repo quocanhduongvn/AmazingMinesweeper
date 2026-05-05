@@ -147,7 +147,9 @@ function hasRevealedNeighbor(x, y) {
 function reveal(startX, startY) {
     let cell = getCell(startX, startY);
     if (cell.state !== 'hidden') return;
-    if (!hasRevealedNeighbor(startX, startY)) return;
+    
+    // Only check for neighbors if the board is NOT empty (allow starting clicks/initial reveals)
+    if (cells.size > 0 && !hasRevealedNeighbor(startX, startY)) return;
     
     if (isMine(startX, startY)) {
         setCell(startX, startY, 'exploded');
@@ -343,7 +345,13 @@ modeToggleBtn.addEventListener('click', () => {
 
 resetBtn.addEventListener('click', () => {
     cells.clear(); seed = Math.random(); camera = { x: canvas.width / (2 * (window.devicePixelRatio||1)), y: canvas.height / (2 * (window.devicePixelRatio||1)), zoom: 45 };
-    reveal(0, 0); updateStats(); saveGame(true);
+    // Reveal a small cluster to start
+    for(let i=0; i<5; i++) {
+        let rx = Math.floor(Math.random() * 5) - 2;
+        let ry = Math.floor(Math.random() * 5) - 2;
+        reveal(rx, ry);
+    }
+    updateStats(); saveGame(true);
 });
 
 document.getElementById('hardResetBtn').addEventListener('click', () => {
@@ -406,5 +414,14 @@ canvas.addEventListener('touchend', (e) => {
 
 // Start
 setupCanvas();
-if (!loadGame()) { camera = { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 45 }; reveal(0, 0); updateStats(); }
+if (!loadGame()) { 
+    camera = { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 45 }; 
+    // Initial reveals
+    for(let i=0; i<5; i++) {
+        let rx = Math.floor(Math.random() * 5) - 2;
+        let ry = Math.floor(Math.random() * 5) - 2;
+        reveal(rx, ry);
+    }
+    updateStats(); 
+}
 else draw();
