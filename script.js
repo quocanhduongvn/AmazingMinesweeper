@@ -22,21 +22,22 @@ let dragStart = { x: 0, y: 0 };
 let cameraStart = { x: 0, y: 0 };
 let cells = new Map(); 
 let seed = Math.random();
-let autoSolveInterval = null;
 let touchStartPos = { x: 0, y: 0 };
 let lastPinchDist = 0;
 
 const MINE_PROBABILITY = 0.20;
 const SAFE_RADIUS = 2;
 
-// --- DPI Support ---
+// --- DPI Support & Resizing ---
 function setupCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    ctx.scale(dpr, dpr);
+    // Round to avoid subpixel distortion
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
     canvas.style.width = window.innerWidth + 'px';
     canvas.style.height = window.innerHeight + 'px';
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
     draw();
 }
 window.addEventListener('resize', setupCanvas);
@@ -147,8 +148,6 @@ function hasRevealedNeighbor(x, y) {
 function reveal(startX, startY) {
     let cell = getCell(startX, startY);
     if (cell.state !== 'hidden') return;
-    
-    // Only check for neighbors if the board is NOT empty (allow starting clicks/initial reveals)
     if (cells.size > 0 && !hasRevealedNeighbor(startX, startY)) return;
     
     if (isMine(startX, startY)) {
@@ -208,9 +207,8 @@ canvas.addEventListener('mouseup', (e) => {
         let rect = canvas.getBoundingClientRect();
         let gridX = Math.floor((e.clientX - rect.left - camera.x) / camera.zoom);
         let gridY = Math.floor((e.clientY - rect.top - camera.y) / camera.zoom);
-        if (e.button === 0) {
-            reveal(gridX, gridY);
-        } else if (e.button === 2) toggleFlag(gridX, gridY);
+        if (e.button === 0) reveal(gridX, gridY);
+        else if (e.button === 2) toggleFlag(gridX, gridY);
     }
     saveGame();
 });
@@ -229,79 +227,59 @@ canvas.addEventListener('wheel', (e) => {
 });
 
 // --- Rendering ---
-const colors = ['', '#2196F3', '#4CAF50', '#F44336', '#9C27B0', '#FF9800', '#00BCD4', '#000000', '#9E9E9E'];
+// Colors from image: Numbers are white/light grey
+const colors = ['', '#64B5F6', '#81C784', '#E57373', '#BA68C8', '#FFB74D', '#4DD0E1', '#FFF', '#FFF'];
 
 function drawCell(x, y, screenX, screenY, size) {
     let cell = getCell(x, y);
     const padding = 1;
-    const innerSize = size - padding * 2;
-    const r = Math.max(2, size * 0.1); // Rounded corners
+    const drawSize = size - padding;
+    const r = 2; // Subtle rounding as in image
 
     if (cell.state === 'hidden') {
-        // Shadow/Depth
-        ctx.fillStyle = '#222';
-        ctx.beginPath(); ctx.roundRect(screenX + 2, screenY + 2, size - 2, size - 2, r); ctx.fill();
-
-        // Main Cell Gradient
-        let grad = ctx.createLinearGradient(screenX, screenY, screenX + size, screenY + size);
-        grad.addColorStop(0, '#555');
-        grad.addColorStop(1, '#333');
-        ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, innerSize, innerSize, r); ctx.fill();
-        
-        // Highlight Edge
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
+        // Darker grey for hidden
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
+        // Thin border
+        ctx.strokeStyle = '#222'; ctx.lineWidth = 1; ctx.stroke();
         
     } else if (cell.state === 'revealed') {
-        ctx.fillStyle = '#1a1a1a';
-        ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, innerSize, innerSize, r); ctx.fill();
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.stroke();
+        // Lighter grey for revealed
+        ctx.fillStyle = '#2c2c2c';
+        ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
         
         let count = getMineCount(x, y);
         if (count > 0) {
             ctx.fillStyle = colors[count] || '#fff';
-            ctx.font = `bold ${size * 0.55}px 'Outfit', 'Inter', sans-serif`;
+            // Blocky font from image
+            ctx.font = `700 ${size * 0.6}px 'Orbitron', sans-serif`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(count, screenX + size/2, screenY + size/2 + 1);
         }
     } else if (cell.state === 'flagged') {
-        ctx.fillStyle = '#444';
-        ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, innerSize, innerSize, r); ctx.fill();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
         
-        // Modern Warning Triangle
-        ctx.shadowBlur = 10; ctx.shadowColor = '#FF9800';
-        ctx.fillStyle = '#FF9800';
+        // Red flag on pole as in image
+        const cx = screenX + size/2;
+        const cy = screenY + size/2;
+        
+        ctx.fillStyle = '#D32F2F'; // Dark red
         ctx.beginPath();
-        ctx.moveTo(screenX + size/2, screenY + size * 0.25);
-        ctx.lineTo(screenX + size * 0.2, screenY + size * 0.75);
-        ctx.lineTo(screenX + size * 0.8, screenY + size * 0.75);
-        ctx.closePath();
+        ctx.moveTo(cx - size*0.1, cy + size*0.3); // Pole bottom
+        ctx.lineTo(cx - size*0.1, cy - size*0.3); // Pole top
+        ctx.lineTo(cx + size*0.3, cy - size*0.05); // Flag tip
+        ctx.lineTo(cx - size*0.1, cy + size*0.2); // Flag bottom back to pole
         ctx.fill();
         
-        ctx.fillStyle = '#000';
-        ctx.font = `bold ${size * 0.3}px Inter`;
-        ctx.textAlign = 'center';
-        ctx.fillText('!', screenX + size/2, screenY + size * 0.68);
-        ctx.shadowBlur = 0;
+        // Pole line
+        ctx.strokeStyle = '#D32F2F'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx-size*0.1, cy+size*0.35); ctx.lineTo(cx-size*0.1, cy-size*0.35); ctx.stroke();
+        
     } else if (cell.state === 'exploded') {
-        ctx.fillStyle = '#F44336';
-        ctx.beginPath(); ctx.roundRect(screenX + padding, screenY + padding, innerSize, innerSize, r); ctx.fill();
-        
-        // Bomb core
-        ctx.fillStyle = '#000';
-        ctx.beginPath(); ctx.arc(screenX + size/2, screenY + size/2, size * 0.25, 0, Math.PI * 2); ctx.fill();
-        
-        // Spikes
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-        for(let i=0; i<8; i++) {
-            let ang = i * Math.PI/4;
-            ctx.beginPath();
-            ctx.moveTo(screenX+size/2, screenY+size/2);
-            ctx.lineTo(screenX+size/2 + Math.cos(ang)*size*0.35, screenY+size/2 + Math.sin(ang)*size*0.35);
-            ctx.stroke();
-        }
+        ctx.fillStyle = '#f44336';
+        ctx.beginPath(); ctx.roundRect(screenX, screenY, drawSize, drawSize, r); ctx.fill();
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX+size/2, screenY+size/2, size*.2, 0, Math.PI*2); ctx.fill();
     }
 }
 
@@ -315,7 +293,9 @@ function draw() {
         camera = { x: w / 2, y: h / 2, zoom: 45 };
     }
     
-    ctx.clearRect(0, 0, w, h);
+    // Pitch black background as in image
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, w, h);
     
     let startX = Math.floor((-camera.x) / camera.zoom), endX = Math.ceil((w - camera.x) / camera.zoom);
     let startY = Math.floor((-camera.y) / camera.zoom), endY = Math.ceil((h - camera.y) / camera.zoom);
@@ -325,32 +305,19 @@ function draw() {
             drawCell(x, y, Math.floor(camera.x + x * camera.zoom), Math.floor(camera.y + y * camera.zoom), Math.ceil(camera.zoom));
         }
     }
-    
-    // Chunk grid (Neon)
-    ctx.strokeStyle = 'rgba(0, 201, 255, 0.25)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let x = startX; x <= endX; x++) if (x % 8 === 0) { let sx = Math.floor(camera.x + x * camera.zoom); ctx.moveTo(sx, 0); ctx.lineTo(sx, h); }
-    for (let y = startY; y <= endY; y++) if (y % 8 === 0) { let sy = Math.floor(camera.y + y * camera.zoom); ctx.moveTo(0, sy); ctx.lineTo(w, sy); }
-    ctx.stroke();
 }
 
 // --- UI ---
 menuToggleBtn.addEventListener('click', () => uiContainer.classList.toggle('hidden'));
 modeToggleBtn.addEventListener('click', () => {
     currentMode = currentMode === 'dig' ? 'flag' : 'dig';
-    modeToggleBtn.innerText = currentMode === 'dig' ? 'Chế độ: ⛏️ Mở ô' : 'Chế độ: ⚠️ Đánh dấu';
+    modeToggleBtn.innerText = currentMode === 'dig' ? '⛏️ Mở ô' : '🚩 Cắm cờ';
     modeToggleBtn.classList.toggle('flag-mode', currentMode === 'flag');
 });
 
 resetBtn.addEventListener('click', () => {
     cells.clear(); seed = Math.random(); camera = { x: canvas.width / (2 * (window.devicePixelRatio||1)), y: canvas.height / (2 * (window.devicePixelRatio||1)), zoom: 45 };
-    // Reveal a small cluster to start
-    for(let i=0; i<5; i++) {
-        let rx = Math.floor(Math.random() * 5) - 2;
-        let ry = Math.floor(Math.random() * 5) - 2;
-        reveal(rx, ry);
-    }
+    for(let i=0; i<5; i++) reveal(Math.floor(Math.random()*5)-2, Math.floor(Math.random()*5)-2);
     updateStats(); saveGame(true);
 });
 
@@ -414,14 +381,5 @@ canvas.addEventListener('touchend', (e) => {
 
 // Start
 setupCanvas();
-if (!loadGame()) { 
-    camera = { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 45 }; 
-    // Initial reveals
-    for(let i=0; i<5; i++) {
-        let rx = Math.floor(Math.random() * 5) - 2;
-        let ry = Math.floor(Math.random() * 5) - 2;
-        reveal(rx, ry);
-    }
-    updateStats(); 
-}
+if (!loadGame()) { camera = { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 45 }; for(let i=0; i<5; i++) reveal(Math.floor(Math.random()*5)-2, Math.floor(Math.random()*5)-2); updateStats(); }
 else draw();
