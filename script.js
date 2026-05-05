@@ -31,15 +31,18 @@ const SAFE_RADIUS = 2;
 // --- DPI Support ---
 function setupCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
     ctx.resetTransform();
     ctx.scale(dpr, dpr);
     draw();
 }
 window.addEventListener('resize', setupCanvas);
+window.addEventListener('load', () => setTimeout(setupCanvas, 100));
 
 // --- Game Logic ---
 function hash(x, y) {
